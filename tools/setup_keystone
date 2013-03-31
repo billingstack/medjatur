@@ -1,0 +1,14 @@
+[[ -z "$OS_RC" || ! -r "$OS_RC" ]] && {
+    echo "RC file '$OS_RC' missing or not readable"
+    exit 1
+}
+
+. $OS_RC
+
+USERNAME=medjatur
+PASSWORD=secret
+TENANT_NAME=service
+
+
+tenant_id=$(keystone tenant-list | gawk -v tenant=$TENANT_NAME '$0 ~ tenant {print $2}')
+keystone user-create --name $USERNAME --pass $PASSWORD --tenant-id $tenant_id
