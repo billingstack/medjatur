@@ -58,6 +58,21 @@ class CeilometerSource(SourcePlugin):
             service_type=kwargs.get('service_type') or 'metering',
             endpoint_type=kwargs.get('endpoint_type') or 'publicURL')
 
+    @property
+    def auth_opts(self):
+        opts = cfg.CONF[self.name]
+        auth_opts = {
+            'username': opts.os_username,
+            'password': opts.os_password,
+            'tenant_id': opts.os_tenant_id,
+            'tenant_name': opts.os_tenant_name,
+            'auth_url': opts.os_auth_url,
+            'service_type': opts.os_service_type,
+            'endpoint_type': opts.os_endpoint_type,
+            'insecure': opts.insecure
+        }
+        return auth_opts
+
     def _get_client(self):
         opts = cfg.CONF[self.name]
 
@@ -66,21 +81,12 @@ class CeilometerSource(SourcePlugin):
             endpoint = opts.ceilometer_url
         elif opts.os_username and opts.os_password and opts.os_auth_url \
                 and (opts.os_tenant_name or opts.os_tenant_id):
-            auth_opts = {
-                'username': opts.os_username,
-                'password': opts.os_password,
-                'tenant_id': opts.os_tenant_id,
-                'tenant_name': opts.os_tenant_name,
-                'auth_url': opts.os_auth_url,
-                'service_type': opts.os_service_type,
-                'endpoint_type': opts.os_endpoint_type,
-                'insecure': opts.insecure
-            }
-            _ksclient = self._get_ksclient(**auth_opts)
+            _ksclient = self._get_ksclient(**self.auth_opts)
+
             token = opts.os_auth_token or _ksclient.auth_token
 
             endpoint = opts.ceilometer_url or \
-                self._get_endpoint(_ksclient, **auth_opts)
+                self._get_endpoint(_ksclient, **self.auth_opts)
         elif opts.ceilometer_url:
             endpoint = opts.ceilometer_url
         else:
@@ -98,7 +104,6 @@ class CeilometerSource(SourcePlugin):
         client = ceilometerclient.Client('2', endpoint, **kwargs)
         return client
 
-    def get_accounts(self, account_id):
-        LOG.debug("Fetching ceilometer data for %s" % account_id)
-        for account in self.ceilometer.project.list():
-            print account
+    def get_accounts(self):
+        ksclient = self._get_ksclient(**self.auth_opts)
+        return [i.id for i in ksclient.tenants.list()]

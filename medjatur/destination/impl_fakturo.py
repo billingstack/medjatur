@@ -28,8 +28,9 @@ class FakturoDestination(DestinationPlugin):
         self.client = cls.get_client(cfg.CONF[self.name].api_url)
 
     def get_accounts(self):
-        return [i['id'] for i in self.client.customer.list(
-            account_id=cfg.CONF[self.name].account_id)]
+        accounts = self.client.customer.list(
+            account_id=cfg.CONF[self.name].account_id)
+        return [a['id'] for a in accounts]
 
     def send_data(self, data):
         pass
